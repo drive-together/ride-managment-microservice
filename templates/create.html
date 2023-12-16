@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create</title>
+</head>
+<body>
+    <h1>Create</h1>
+    <form id="createForm" action="/api/rides" method="post">
+        <label for="departure">Departure:</label>
+        <input type="datetime-local" id="departure" name="departure" required><br>
+        <label for="origin">Origin:</label>
+        <input type="text" id="origin" name="origin" required><br>
+        <label for="destination">Destination:</label>
+        <input type="text" id="destination" name="destination" required><br>
+        <button type="submit">Create</button>
+    </form>
+
+    <script>
+        document.getElementById('createForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            console.log(document.getElementById('departure').value)
+            // Perform the form submission using JavaScript
+            fetch('/api/rides', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + localStorage.getItem("jwt_token")
+                },
+                body: JSON.stringify({
+                    departure: document.getElementById('departure').value,
+                    origin: document.getElementById('origin').value,
+                    destination: document.getElementById('destination').value,
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                window.location.href = '/rides';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html

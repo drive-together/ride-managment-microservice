@@ -1,0 +1,36 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: drive-together-ingress
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: your.domain.com
+      http:
+        paths:
+          - path: /account-managment(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: account-managment
+                port:
+                  number: 80
+          - path: /ride-managment(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: ride-managment
+                port:
+                  number: 80
+          - path: /(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: account-managment
+                port:
+                  number: 80
