@@ -34,11 +34,11 @@ def create_app():
         return render_template('index.html')
     
     
-    @app.route('/health/liveness', methods=['GET'])
+    @app.route('/livez', methods=['GET'])
     def health_check_liveness():
         return jsonify(status='ok', message='Health check passed'), 200
         
-    @app.route('/health/readiness', methods=['GET'])
+    @app.route('/readyz', methods=['GET'])
     def health_check_readiness():
         try:
             db.session.execute(text('SELECT 1'))
