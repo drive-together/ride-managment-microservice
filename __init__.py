@@ -29,10 +29,9 @@ def create_app():
     with app.app_context():
         db.create_all()
 
-    @app.route('/index')
+    @app.route('/', methods=['GET'])
     def index():
-        return render_template('index.html')
-    
+        return jsonify(), 200
     
     @app.route('/livez', methods=['GET'])
     def health_check_liveness():
