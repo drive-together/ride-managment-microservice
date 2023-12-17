@@ -50,7 +50,7 @@ def rides_page():
                 'userId': user_id
             }
         }
-        response = requests.post('http://localhost:80/api/users', headers=headers, json=graphql_payload)
+        response = requests.post('http://localhost/account-managment/api/users', headers=headers, json=graphql_payload)
         if response.status_code == 200:
             user = response.json()
 

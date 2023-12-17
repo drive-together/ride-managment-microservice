@@ -7,7 +7,7 @@
 </head>
 <body>
     <h1>Create</h1>
-    <form id="createForm" action="/api/rides" method="post">
+    <form id="createForm" action="/ride-managment/api/rides" method="post">
         <label for="departure">Departure:</label>
         <input type="datetime-local" id="departure" name="departure" required><br>
         <label for="origin">Origin:</label>
@@ -36,7 +36,7 @@
             })
             .then(response => response.json())
             .then(data => {
-                window.location.href = '/rides';
+                window.location.href = '/ride-managment/rides';
             })
             .catch(error => {
                 console.error('Error:', error);
