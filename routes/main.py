@@ -8,7 +8,7 @@ from models.ride import db, Ride
 import requests
 import googlemaps
 from datetime import datetime, timedelta
-from settings import GOOGLE_DIRECTIONS_API_KEY
+from settings import GOOGLE_DIRECTIONS_API_KEY, ACCOUNT_MANAGMENT_SERVICE_HOST, ACCOUNT_MANAGMENT_SERVICE_PORT
 
 main_bp = Blueprint('main', __name__)
 metrics = PrometheusMetrics(main_bp)
@@ -50,7 +50,7 @@ def rides_page():
                 'userId': user_id
             }
         }
-        response = requests.post('http://localhost/account-managment/api/users', headers=headers, json=graphql_payload)
+        response = requests.post(f'http://{ACCOUNT_MANAGMENT_SERVICE_HOST}:{ACCOUNT_MANAGMENT_SERVICE_PORT}/api/users', headers=headers, json=graphql_payload)
         if response.status_code == 200:
             user = response.json()
 
