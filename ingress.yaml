@@ -22,7 +22,7 @@ spec:
             pathType: ImplementationSpecific
             backend:
               service:
-                name: account-managment
+                name: ride-managment
                 port:
                  number: 80  
           - path: /account-managment(/|$)(.*)
