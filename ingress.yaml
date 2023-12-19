@@ -11,6 +11,20 @@ spec:
   rules:
     - http:
         paths:
+          - path: /(.*)(account-managment/apispec.json)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: account-managment
+                port:
+                 number: 80 
+          - path: /(.*)(ride-managment/apispec.json)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: account-managment
+                port:
+                 number: 80  
           - path: /account-managment(/|$)(.*)
             pathType: ImplementationSpecific
             backend:
@@ -25,3 +39,17 @@ spec:
                 name: ride-managment
                 port:
                  number: 80
+          - path: /(.*)(flasgger_static/.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: account-managment
+                port:
+                 number: 80          
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: account-managment
+                port:
+                  number: 80
