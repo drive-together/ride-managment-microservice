@@ -65,6 +65,16 @@ def rides_page():
 
 @main_bp.route('/create', methods=['GET'])
 def create_rides_page():
+    """
+    Endpoint to perform some operation.
+
+    ---
+    responses:
+      200:
+        description: Successful operation
+      500:
+        description: An error occurred
+    """
     return render_template('create.html')
 
 

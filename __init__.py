@@ -35,7 +35,11 @@ def create_app():
         "swagger_ui": True,
         "specs_route": "/opendoc"
     }
-    swagger = Swagger(app, config=swagger_config)
+    template = {
+        "swagger": "2.0",
+        "basePath": "/ride-managment",
+    }
+    swagger = Swagger(app, config=swagger_config, template=template)
 
     # Register blueprints
     app.register_blueprint(main_bp)
