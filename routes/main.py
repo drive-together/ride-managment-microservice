@@ -14,19 +14,24 @@ main_bp = Blueprint('main', __name__)
 metrics = PrometheusMetrics(main_bp)
 logger = logging.getLogger('python-logstash-logger')
 extra = {
-    'service': 'ride_sharing',
+    'service': 'ride-management-microservice',
 }
 
 create_rides_counter = metrics.counter(
     'create_rides_counter',
-    'Number of successful rides created',
+    'Number of create rides calls',
+    labels={'endpoint': '/api/rides'}
+)
+get_rides_counter = metrics.counter(
+    'get_rides_counter',
+    'Number of get rides calls',
     labels={'endpoint': '/api/rides'}
 )
 
 gmaps = googlemaps.Client(key=GOOGLE_DIRECTIONS_API_KEY)
 
-@main_bp.route('/rides', methods=['GET'])
-def rides_page():
+@timeout(5)
+def get_user(user_id):
     headers = {
         'Content-Type': 'application/json',
     }
@@ -38,43 +43,61 @@ def rides_page():
             }
         }
     '''
+    graphql_payload = {
+        'query': graphql_query,
+        'variables': {
+            'userId': user_id
+        }
+    }
+
+    response = requests.post(f'http://{ACCOUNT_MANAGMENT_SERVICE_HOST}:{ACCOUNT_MANAGMENT_SERVICE_PORT}/api/users', headers=headers, json=graphql_payload)
+    if response.status_code == 200:
+        user = response.json()
+        logger.info(f'User retrieved: {user}', extra=extra)
+        return user
+    
+    logger.error(f'Error retrieving user: {response.json()}', extra=extra)
+    return None
+
+@main_bp.route('/rides', methods=['GET'])
+def rides_page():
+    """
+    Retrieves a list of rides along with user information.
+
+    ---
+    responses:
+      200:
+        description: Returns a list of rides and associated user details.
+    """
 
     res=[]
     rides = Ride.query.all()
     for ride in rides:
         user_id = ride.user_id
-
-        graphql_payload = {
-            'query': graphql_query,
-            'variables': {
-                'userId': user_id
-            }
+        try:
+            user = get_user(user_id)
+        except Exception as e:
+            user = None
+        entry = {
+            'ride': ride.to_dict(),
+            'user': user
         }
-        response = requests.post(f'http://{ACCOUNT_MANAGMENT_SERVICE_HOST}:{ACCOUNT_MANAGMENT_SERVICE_PORT}/api/users', headers=headers, json=graphql_payload)
-        if response.status_code == 200:
-            user = response.json()
-
-            entry = {
-                'ride': ride.to_dict(),
-                'user': user
-            }
-            res.append(entry)
+        res.append(entry)
         
-
+    logger.info("Rendedred rides", extra=extra)
     return render_template('rides.html', rides=res)
 
 @main_bp.route('/create', methods=['GET'])
 def create_rides_page():
     """
-    Endpoint to perform some operation.
+    Renders the page for creating new rides.
 
     ---
     responses:
       200:
-        description: Successful operation
-      500:
-        description: An error occurred
+        description: Returns the HTML page for creating rides.
     """
+    logger.info("Create rides page rendered", extra=extra)
     return render_template('create.html')
 
 
@@ -82,6 +105,38 @@ def create_rides_page():
 @create_rides_counter
 @jwt_required()
 def create_rides():
+    """
+    Creates a new ride based on the provided information.
+
+    ---
+    parameters:
+      - name: Authorization
+        in: header
+        type: string
+        required: true
+        default: Bearer <JWT_TOKEN>
+        description: The JWT token in the format 'Bearer <JWT_TOKEN>'.
+      - name: Ride
+        in: body
+        type: object
+        required: true
+        schema:
+            id: Ride
+            properties:
+                departure:
+                    type: string
+                    format: date-time
+                    description: The departure time of the ride.
+                origin:
+                    type: string
+                    description: The origin of the ride.
+                destination:
+                    type: string
+                    description: The destination of the ride.
+    responses:
+      200:
+        description: Returns the details of the newly created ride.
+    """
     user_id = get_jwt_identity()
 
     data = request.get_json()
@@ -99,43 +154,37 @@ def create_rides():
     db.session.add(new_ride)
     db.session.commit()
 
+    logger.info(f'New ride created: {new_ride.to_dict()}', extra=extra)
     return jsonify(new_ride.to_dict()), 200
 
 @main_bp.route('/api/rides', methods=['GET'])
+@get_rides_counter
 def get_rides():
-    headers = {
-        'Content-Type': 'application/json',
-    }
-    graphql_query = '''
-        query User($userId: ID!){
-            user(id: $userId) {
-                id
-                username
-            }
-        }
-    '''
+    """
+    Retrieves a list of rides along with associated user details.
+
+    ---
+    responses:
+      200:
+        description: Returns a JSON array of rides and user information.
+    """
 
     res=[]
     rides = Ride.query.all()
     for ride in rides:
         user_id = ride.user_id
-
-        graphql_payload = {
-            'query': graphql_query,
-            'variables': {
-                'userId': user_id
-            }
-        }
-        response = requests.post('http://localhost:80/api/users', headers=headers, json=graphql_payload)
-        if response.status_code == 200:
-            user = response.json()
-
-            entry = {
-                'ride': ride.to_dict(),
-                'user': user
-            }
-            res.append(entry)
+        try:
+            user = get_user(user_id)
+        except Exception as e:
+            user = None
         
+        entry = {
+            'ride': ride.to_dict(),
+            'user': user
+        }
+        res.append(entry)
+        
+    logger.info("Rides retrieved", extra=extra)
     return jsonify(res), 200
 
 
@@ -146,14 +195,38 @@ def timeout(seconds):
 
 @main_bp.route('/api/timeout_test/<int:seconds>', methods=['GET'])
 async def timeout_test(seconds):
+    """
+    Tests the timeout functionality.
+
+    ---
+    parameters:
+      - name: seconds
+        in: path
+        type: integer
+        required: true
+        description: The duration in seconds for the timeout.
+    responses:
+      200:
+        description: Returns "OK" if the timeout test is successful.
+    """
     try:
         timeout(seconds)
         return jsonify("OK"), 200
     except Exception as e:
+        print(e)
         return jsonify(None), 200 #Fallback
     
 
 @circuit(failure_threshold=2, expected_exception=TimeoutError)
 @main_bp.route('/api/circuit_breaker_test', methods=['GET'])
 def circuit_breaker_test():
+    """
+    Tests the circuit breaker functionality.
+
+    ---
+    responses:
+      200:
+        description: Returns "OK" if the timeout test is successful.
+    """
     timeout(6)
+    return jsonify("OK"), 200
