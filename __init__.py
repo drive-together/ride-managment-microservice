@@ -90,7 +90,7 @@ def create_app():
 
         return jsonify("Ready set to false"), 200
     
-    @timeout(5)
+    @timeout(5, use_signals=False)
     def test_timeout(seconds):
         time.sleep(seconds)
         return jsonify("OK"), 200
