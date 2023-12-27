@@ -10,6 +10,9 @@ from routes.main import main_bp
 from models.ride import db
 from settings import LOGIT_IO_HOST, LOGIT_IO_PORT
 
+global ready
+ready = True
+
 def create_app():
     app = Flask(__name__)
     app.config.from_pyfile('settings.py')
@@ -58,11 +61,22 @@ def create_app():
         
     @app.route('/readyz', methods=['GET'])
     def health_check_readiness():
+        global ready
+        if not ready:
+            return jsonify(status='error', message='Health check failed'), 500
+        
         try:
             db.session.execute(text('SELECT 1'))
             return jsonify(status='ok', message='Health check passed'), 200
         except Exception as e:
-            return jsonify(status='error', message=f'Health check failed: {str(e)}'), 500       
+            return jsonify(status='error', message=f'Health check failed: {str(e)}'), 500
+        
+    @app.route('/readiness_test', methods=['GET'])
+    def readiness_test():
+        global ready
+        ready = False
+
+        return jsonify("Ready set to false"), 200
 
     logger = logging.getLogger('python-logstash-logger')
     logger.setLevel(logging.INFO)
