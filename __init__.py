@@ -18,11 +18,10 @@ alive = True
 
 def create_app():
     app = Flask(__name__)
-    app.config.from_pyfile('settings.py')
+    app.config.from_pyfile('settings.py')   
     
     CORS(app)
 
-    # Initialize extensions
     db.init_app(app)
     with app.app_context():
         db.create_all()
@@ -60,7 +59,6 @@ def create_app():
     ))
     app.logger.addHandler(logger)
 
-    # Register blueprints
     app.register_blueprint(main_bp)
 
     @app.route('/', methods=['GET'])
@@ -82,7 +80,9 @@ def create_app():
             return jsonify(status='ok', message='Health check passed'), 200
         except Exception as e:
             return jsonify(status='error', message=f'Health check failed: {str(e)}'), 500
-        
+    
+
+    # Test endpoints
     @app.route('/liveness_test', methods=['GET'])
     def liveness_test():
         global alive

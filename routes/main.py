@@ -29,7 +29,7 @@ get_rides_counter = metrics.counter(
 
 gmaps = googlemaps.Client(key=GOOGLE_DIRECTIONS_API_KEY)
 
-@timeout(5)
+@timeout(10, use_signals=False)
 def get_user(user_id):
     headers = {
         'Content-Type': 'application/json',
@@ -76,6 +76,7 @@ def rides_page():
         try:
             user = get_user(user_id)
         except Exception as e:
+            print(e)
             user = None
         entry = {
             'ride': ride.to_dict(),
@@ -84,6 +85,8 @@ def rides_page():
         res.append(entry)
         
     logger.info("Rendedred rides", extra=extra)
+
+    print(res)
     return render_template('rides.html', rides=res)
 
 @main_bp.route('/create', methods=['GET'])
