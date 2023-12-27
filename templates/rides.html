@@ -5,28 +5,34 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>List of Rides</title>
+    <!-- Include Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
+<body class="container mt-5">
+
     <h1>List of Rides</h1>
     
     {% if rides %}
-        <ul>
+        <ul class="list-group">
             {% for ride_info in rides %}
                 {% set ride = ride_info['ride'] %}
                 {% set user_info = ride_info['user']['data']['user'] %}
-                <li>
-                    Ride ID: {{ ride.id }}, 
-                    Departure: {{ ride.departure }},
-                    Arrival: {{ ride.arrival }},
-                    Origin: {{ ride.origin }},
-                    Destination: {{ ride.destination }},
-                    User ID: {{ user_info.id }},
-                    Username: {{ user_info.username }}
+                <li class="list-group-item">
+                    <strong>Ride ID:</strong> {{ ride.id }}, 
+                    <strong>Departure:</strong> {{ ride.departure }},
+                    <strong>Arrival:</strong> {{ ride.arrival }},
+                    <strong>Origin:</strong> {{ ride.origin }},
+                    <strong>Destination:</strong> {{ ride.destination }},
+                    <strong>User ID:</strong> {{ user_info.id }},
+                    <strong>Username:</strong> {{ user_info.username }}
                 </li>
             {% endfor %}
         </ul>
     {% else %}
-        <p>No rides available.</p>
+        <p class="alert alert-warning">No rides available.</p>
     {% endif %}
+
+    <!-- Include Bootstrap JS (optional) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
