@@ -90,12 +90,12 @@ def create_app():
 
         return jsonify("Ready set to false"), 200
     
-    @timeout(5, use_signals=False)
+    @timeout(3, use_signals=False)
     def test_timeout(seconds):
         time.sleep(seconds)
         return jsonify("OK"), 200
 
-    @circuit(failure_threshold=2, recovery_timeout=3)
+    @circuit(failure_threshold=2, recovery_timeout=12)
     def test_circuit(seconds):
         return test_timeout(seconds)
 
