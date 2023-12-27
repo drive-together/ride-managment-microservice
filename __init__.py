@@ -5,7 +5,10 @@ from prometheus_flask_exporter import PrometheusMetrics
 from sqlalchemy import text
 import logging
 import logstash
+from timeout_decorator import timeout
+from circuitbreaker import circuit, CircuitBreakerError
 from flasgger import Swagger
+import time
 from routes.main import main_bp
 from models.ride import db
 from settings import LOGIT_IO_HOST, LOGIT_IO_PORT
@@ -21,7 +24,11 @@ def create_app():
 
     # Initialize extensions
     db.init_app(app)
+    with app.app_context():
+        db.create_all()
+
     jwt = JWTManager(app)
+
     metrics = PrometheusMetrics(app)
 
     swagger_config = {
@@ -44,12 +51,17 @@ def create_app():
     }
     swagger = Swagger(app, config=swagger_config, template=template)
 
+    logger = logging.getLogger('python-logstash-logger')
+    logger.setLevel(logging.INFO)
+    logger.addHandler(logstash.UDPLogstashHandler(
+        host=LOGIT_IO_HOST, 
+        port=LOGIT_IO_PORT,
+        version=1
+    ))
+    app.logger.addHandler(logger)
+
     # Register blueprints
     app.register_blueprint(main_bp)
-
-    # Create the database tables
-    with app.app_context():
-        db.create_all()
 
     @app.route('/', methods=['GET'])
     def index():
@@ -77,15 +89,28 @@ def create_app():
         ready = False
 
         return jsonify("Ready set to false"), 200
+    
+    @timeout(5)
+    def test_timeout(seconds):
+        time.sleep(seconds)
+        return jsonify("OK"), 200
 
-    logger = logging.getLogger('python-logstash-logger')
-    logger.setLevel(logging.INFO)
-    logger.addHandler(logstash.UDPLogstashHandler(
-        host=LOGIT_IO_HOST, 
-        port=LOGIT_IO_PORT,
-        version=1
-    ))
+    @circuit(failure_threshold=2, recovery_timeout=3)
+    def test_circuit(seconds):
+        return test_timeout(seconds)
 
-    app.logger.addHandler(logger)
+    @app.route('/timeout_test/<int:seconds>', methods=['GET'])
+    async def timeout_test(seconds):
+        try:
+            return test_timeout(seconds)
+        except Exception as e:
+            return jsonify("Timeout fallback"), 200 #Fallback
+
+    @app.route('/circuit_breaker_test/<int:seconds>', methods=['GET'])
+    def circuit_breaker_test(seconds):
+        try:
+            return test_circuit(seconds)
+        except CircuitBreakerError as e:
+            return jsonify("Circuit breaker fallback"), 200
 
     return app

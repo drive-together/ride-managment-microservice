@@ -3,7 +3,6 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from prometheus_flask_exporter import PrometheusMetrics
 import logging
 from timeout_decorator import timeout
-from circuitbreaker import circuit, CircuitBreakerError
 from models.ride import db, Ride
 import requests
 import googlemaps
@@ -186,47 +185,3 @@ def get_rides():
         
     logger.info("Rides retrieved", extra=extra)
     return jsonify(res), 200
-
-
-@timeout(5) #TODO test on linux
-def timeout(seconds):
-    import time
-    time.sleep(seconds)
-
-@main_bp.route('/api/timeout_test/<int:seconds>', methods=['GET'])
-async def timeout_test(seconds):
-    """
-    Tests the timeout functionality.
-
-    ---
-    parameters:
-      - name: seconds
-        in: path
-        type: integer
-        required: true
-        description: The duration in seconds for the timeout.
-    responses:
-      200:
-        description: Returns "OK" if the timeout test is successful.
-    """
-    try:
-        timeout(seconds)
-        return jsonify("OK"), 200
-    except Exception as e:
-        print(e)
-        return jsonify(None), 200 #Fallback
-    
-
-@circuit(failure_threshold=2, expected_exception=TimeoutError)
-@main_bp.route('/api/circuit_breaker_test', methods=['GET'])
-def circuit_breaker_test():
-    """
-    Tests the circuit breaker functionality.
-
-    ---
-    responses:
-      200:
-        description: Returns "OK" if the timeout test is successful.
-    """
-    timeout(6)
-    return jsonify("OK"), 200
