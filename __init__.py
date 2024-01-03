@@ -42,7 +42,7 @@ def create_app():
         ],
         "static_url_path": "/flasgger_static",
         "swagger_ui": True,
-        "specs_route": "/opendoc"
+        "specs_route": "/openapi"
     }
     template = {
         "swagger": "2.0",
